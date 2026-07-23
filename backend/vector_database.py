@@ -10,7 +10,8 @@ class VectorDatabase:
 
         self._collection = self._chroma_client.get_or_create_collection(
             name=collection_name,
-            embedding_function=embedding_function
+            embedding_function=embedding_function,
+            configuration={"hnsw": {"space": "cosine"}}
         )
 
     def insert(self, ids: list[str], documents: list[str], metadatas: dict[any, any]):
