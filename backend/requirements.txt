@@ -1,0 +1,6 @@
+fastapi[standard]
+ollama
+chromadb
+langchain-text-splitters
+sqlmodel
+python-dotenv
