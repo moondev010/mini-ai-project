@@ -25,7 +25,7 @@ print(f"{len(raw_docs)} documents found")
 ids, docs, metadatas = chunk_documents(raw_docs, CHUNK_SIZE, CHUNK_OVERLAP)
 print(f"{len(ids)} chunks generated")
 
-vector_database = VectorDatabase(client, "docs", ollama_fn)
+vector_database = VectorDatabase(client, COLLECTION, ollama_fn)
 
 print("Writing documents")
 vector_database.insert(ids, docs, metadatas)

@@ -25,8 +25,7 @@ def chunk_documents(doc_contents: list[str], chunk_size: int, chunk_overlap: int
 
     headers_to_split_on = [
         ("#", "h1"),
-        ("##", "h2"),
-        ("###", "h3")
+        ("##", "h2")
     ]
 
     separators = ["\n\n", "\n", ". ", "! ", "? ", "¡", "¿", " ", ""]
