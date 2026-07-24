@@ -10,19 +10,17 @@ from vector_database import VectorDatabase
 
 load_dotenv()
 
-settings = Settings()
+client = PersistentClient(path=Settings.CHROMADB_PATH)
+ollama_fn = OllamaEmbeddingFunction(model_name=Settings.EMBEDDING_MODEL)
 
-client = PersistentClient(path=settings.CHROMADB_PATH)
-ollama_fn = OllamaEmbeddingFunction(model_name=settings.EMBEDDING_MODEL)
-
-raw_docs = load_documents(settings.DOCS_PATH)
+raw_docs = load_documents(Settings.DOCS_PATH)
 print(f"{len(raw_docs)} documents found")
 
 ids, docs, metadatas = chunk_documents(
-    raw_docs, settings.CHUNK_SIZE, settings.CHUNK_OVERLAP)
+    raw_docs, Settings.CHUNK_SIZE, Settings.CHUNK_OVERLAP)
 print(f"{len(ids)} chunks generated")
 
-vector_database = VectorDatabase(client, settings.COLLECTION, ollama_fn)
+vector_database = VectorDatabase(client, Settings.COLLECTION, ollama_fn)
 
 print("Writing documents")
 vector_database.insert(ids, docs, metadatas)
