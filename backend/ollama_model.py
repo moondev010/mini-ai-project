@@ -1,6 +1,6 @@
-from typing import Iterator
+from typing import AsyncIterator
 
-from ollama import Client
+from ollama import AsyncClient
 
 
 class OllamaModel:
@@ -15,12 +15,12 @@ class OllamaModel:
         self._host = host
         self._think = think
 
-        self._client = Client(
+        self._client = AsyncClient(
             host=host,
             headers={"Authorization": f"Bearer {api_key}"}
         )
 
-    def send_messages(self, messages: list[dict]) -> Iterator[str]:
+    async def send_messages(self, messages: list[dict]) -> AsyncIterator[str]:
         stream = self._client.chat(
             model=self._model,
             messages=messages,
@@ -28,5 +28,5 @@ class OllamaModel:
             stream=True
         )
 
-        for part in stream:
+        async for part in stream:
             yield part["message"]["content"]
