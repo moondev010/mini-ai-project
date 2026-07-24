@@ -16,7 +16,7 @@ class Settings:
     LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-oss:20b-cloud")
     OLLAMA_KEY: str | None = os.getenv("OLLAMA_KEY") or None
     DB_URL: str = os.getenv("DB_URL")
-    DB_ECHO: int = 1 if int(os.getenv("DB_ECHO")) == 1 else 0
+    DB_ECHO: bool = os.getenv("DB_ECHO", "false") == "true"
 
     def __init__(self):
         if not self.DB_URL:

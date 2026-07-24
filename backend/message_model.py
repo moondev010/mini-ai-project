@@ -13,3 +13,8 @@ class Message(SQLModel, table=True):
     role: Role
     content: str
     created_at: datetime = Field(default_factory=datetime.now)
+
+
+class MessageCreate(SQLModel):
+    role: Role
+    content: str
