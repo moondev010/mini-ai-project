@@ -20,7 +20,7 @@ class OllamaModel:
             headers={"Authorization": f"Bearer {api_key}"}
         )
 
-    def chat(self, messages: list[dict]) -> Iterator[str]:
+    def send_messages(self, messages: list[dict]) -> Iterator[str]:
         stream = self._client.chat(
             model=self._model,
             messages=messages,
