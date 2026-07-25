@@ -1,17 +1,21 @@
 from pathlib import Path
 
+from starlette.concurrency import run_in_threadpool
 from fastapi import FastAPI, Depends, WebSocket, WebSocketDisconnect
 from sqlmodel import Session
 
 from settings import Settings
 from database import Database
+from vector_database import VectorDatabase, build_final_prompt
 from message_repository import MessageRepository
-from message_model import MessageCreate
+from message_model import MessageCreate, Message
 from ollama_model import OllamaModel
 
 db = Database(url=Settings.DB_URL, echo=Settings.DB_ECHO)
+
 ollama_model = OllamaModel(
     api_key=Settings.OLLAMA_KEY, model=Settings.LLM_MODEL)
+vector_database = VectorDatabase.build_from_settings(settings=Settings)
 
 app = FastAPI()
 
@@ -22,18 +26,48 @@ def get_message_repository(session: Session = Depends(db.get_session)) -> Messag
     return MessageRepository(session=session)
 
 
+def get_ollama_model() -> OllamaModel:
+    return ollama_model
+
+
+def get_vector_db() -> VectorDatabase:
+    return vector_database
+
+
 @app.websocket("/chat")
-async def chat(websocket: WebSocket):
+async def chat(
+    websocket: WebSocket,
+    ollama: OllamaModel = Depends(get_ollama_model),
+    vector_db: VectorDatabase = Depends(get_vector_db),
+    repo: MessageRepository = Depends(get_message_repository)
+):
     await websocket.accept()
     try:
         while True:
             prompt = await websocket.receive_text()
 
-            async for part in ollama_model.send_messages([
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt}
+            await run_in_threadpool(repo.create, "user", prompt)
+
+            recent_messages = await run_in_threadpool(repo.get_some)
+
+            history = [{"role": msg.role.value, "content": msg.content}
+                       for msg in recent_messages]
+
+            relevant_chunks = await run_in_threadpool(vector_db.search, prompt)
+
+            FINAL_SYSTEM_PROMPT = build_final_prompt(
+                SYSTEM_PROMPT, relevant_chunks)
+
+            full_response = ""
+
+            async for part in ollama.send_messages([
+                    {"role": "system", "content": FINAL_SYSTEM_PROMPT},
+                *history
             ]):
+                full_response += part
                 await websocket.send_json({"type": "part", "content": part})
+
+            await run_in_threadpool(repo.create, "assistant", full_response)
 
             await websocket.send_json({"type": "done"})
 

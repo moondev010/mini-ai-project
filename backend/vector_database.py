@@ -31,10 +31,10 @@ class VectorDatabase:
             collection_name=settings.COLLECTION
         )
 
-    def insert(self, ids: list[str], docs: list[str], metadatas: dict[str, Any]):
+    def insert(self, ids: list[str], docs: list[str], metadatas: list[dict[str, Any]]):
         self._collection.add(ids=ids, documents=docs, metadatas=metadatas)
 
-    def search(self, prompt: str, k: int = 5, threshold: float = 0.54):
+    def search(self, prompt: str, k: int = 5, threshold: float = 0.54) -> list[str]:
         filtered_docs = []
 
         results = self._collection.query(query_texts=[prompt], n_results=k)
@@ -47,3 +47,9 @@ class VectorDatabase:
         # print(results["distances"][0])
 
         return filtered_docs
+
+
+def build_final_prompt(system_prompt: str, chunks: list[str]):
+    joined_chunks = "\n\n".join(chunks)
+
+    return f"{system_prompt}\n# RELEVANT CHUNKS\n{joined_chunks}"

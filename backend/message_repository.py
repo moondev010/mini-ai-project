@@ -1,4 +1,6 @@
-from sqlmodel import select, Session, Sequence
+from sqlmodel import select, Session
+
+from typing import Sequence
 
 from database import Database
 from message_model import Message, Role
@@ -24,4 +26,4 @@ class MessageRepository:
         statement = select(Message).order_by(
             Message.created_at.desc()).limit(limit)
 
-        return self._session.exec(statement).all()
+        return list(reversed(self._session.exec(statement).all()))
