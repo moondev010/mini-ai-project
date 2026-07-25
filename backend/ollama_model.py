@@ -21,7 +21,7 @@ class OllamaModel:
         )
 
     async def send_messages(self, messages: list[dict]) -> AsyncIterator[str]:
-        stream = self._client.chat(
+        stream = await self._client.chat(
             model=self._model,
             messages=messages,
             think=self._think,

@@ -8,21 +8,16 @@ from settings import Settings
 from documents import load_documents, chunk_documents
 from vector_database import VectorDatabase
 
-load_dotenv()
-
-client = PersistentClient(path=Settings.CHROMADB_PATH)
-ollama_fn = OllamaEmbeddingFunction(model_name=Settings.EMBEDDING_MODEL)
-
-raw_docs = load_documents(Settings.DOCS_PATH)
+raw_docs = load_documents(path=Settings.DOCS_PATH)
 print(f"{len(raw_docs)} documents found")
 
 ids, docs, metadatas = chunk_documents(
-    raw_docs, Settings.CHUNK_SIZE, Settings.CHUNK_OVERLAP)
+    doc_contents=raw_docs, chunk_size=Settings.CHUNK_SIZE, chunk_overlap=Settings.CHUNK_OVERLAP)
 print(f"{len(ids)} chunks generated")
 
-vector_database = VectorDatabase(client, Settings.COLLECTION, ollama_fn)
+vector_database = VectorDatabase.build_from_settings(settings=Settings)
 
 print("Writing documents")
-vector_database.insert(ids, docs, metadatas)
+vector_database.insert(ids=ids, docs=docs, metadatas=metadatas)
 
 print("Ready")
