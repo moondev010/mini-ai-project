@@ -70,7 +70,7 @@ def build_final_prompt(system_prompt: str, user_chunks: list[str], assistant_chu
         joined_assistant_chunks = "\n\n".join(assistant_chunks)
         final_prompt += f"{system_prompt}\n# RELEVANT ASSISTANT CHUNKS\n{joined_assistant_chunks}"
 
-    else:
+    if not (len(user_chunks) > 0 and len(assistant_chunks) > 0):
         final_prompt = system_prompt
 
     return final_prompt
