@@ -6,6 +6,16 @@ from chromadb.utils.embedding_functions import OllamaEmbeddingFunction
 from settings import Settings
 
 
+def log_search_results(results: dict[str, Any]) -> None:
+    headers = [metadata.get("h1", "") for metadata in results["metadatas"][0]]
+    distances = results["distances"][0]
+
+    for header, distance in zip(headers, distances):
+        print(f"Header: {header} | Distance: {distance}")
+
+    print("-----------------------")
+
+
 class VectorDatabase:
     _chroma_client: ClientAPI
     _collection: Collection
@@ -39,17 +49,28 @@ class VectorDatabase:
 
         results = self._collection.query(query_texts=[prompt], n_results=k)
 
+        log_search_results(results)
+
         for i, rank in enumerate(results["distances"][0]):
             if rank <= threshold:
                 filtered_docs.append(results["documents"][0][i])
 
-        # print(results["documents"])
-        # print(results["distances"][0])
-
         return filtered_docs
 
 
-def build_final_prompt(system_prompt: str, chunks: list[str]):
-    joined_chunks = "\n\n".join(chunks)
+def build_final_prompt(system_prompt: str, user_chunks: list[str], assistant_chunks: list[str]) -> str:
 
-    return f"{system_prompt}\n# RELEVANT CHUNKS\n{joined_chunks}"
+    final_prompt = ""
+
+    if len(user_chunks) > 0:
+        joined_user_chunks = "\n\n".join(user_chunks)
+        final_prompt += f"{system_prompt}\n# RELEVANT USER CHUNKS\n{joined_user_chunks}"
+
+    if len(assistant_chunks) > 0:
+        joined_assistant_chunks = "\n\n".join(assistant_chunks)
+        final_prompt += f"{system_prompt}\n# RELEVANT ASSISTANT CHUNKS\n{joined_assistant_chunks}"
+
+    else:
+        final_prompt = system_prompt
+
+    return final_prompt

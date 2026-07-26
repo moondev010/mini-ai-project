@@ -29,4 +29,13 @@ class OllamaModel:
         )
 
         async for part in stream:
-            yield part["message"]["content"]
+            if part["message"]["content"] != "":
+                yield part["message"]["content"]
+
+
+def get_last_assistant_message(history: list[dict]):
+    for msg in reversed(history[:-1]):
+        if msg["role"] == "assistant":
+            return msg
+
+    return None

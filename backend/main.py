@@ -9,7 +9,7 @@ from database import Database
 from vector_database import VectorDatabase, build_final_prompt
 from message_repository import MessageRepository
 from message_model import MessageCreate, Message
-from ollama_model import OllamaModel
+from ollama_model import OllamaModel, get_last_assistant_message
 
 db = Database(url=Settings.DB_URL, echo=Settings.DB_ECHO)
 
@@ -53,10 +53,13 @@ async def chat(
             history = [{"role": msg.role.value, "content": msg.content}
                        for msg in recent_messages]
 
-            relevant_chunks = await run_in_threadpool(vector_db.search, prompt)
+            last_response = get_last_assistant_message(history)
+
+            user_chunks = await run_in_threadpool(vector_db.search, prompt, 3, 0.54)
+            assistant_chunks = await run_in_threadpool(vector_db.search, last_response["content"], 3, 0.54) if last_response else []
 
             FINAL_SYSTEM_PROMPT = build_final_prompt(
-                SYSTEM_PROMPT, relevant_chunks)
+                SYSTEM_PROMPT, user_chunks, assistant_chunks)
 
             full_response = ""
 
