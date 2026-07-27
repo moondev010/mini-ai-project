@@ -1,7 +1,7 @@
+import type { ReactNode } from 'react'
 import Markdown from 'markdown-to-jsx'
 
 interface Message {
-	id: string
 	content: string
 	role: 'user' | 'assistant'
 }
@@ -11,6 +11,7 @@ interface ChatMessageProps {
 }
 
 interface ChatListProps {
+	children?: ReactNode
 	messages: Message[]
 }
 
@@ -37,12 +38,13 @@ function ChatMessage({ message }: ChatMessageProps) {
 	}
 }
 
-function ChatList({ messages }: ChatListProps) {
+function ChatList({ children, messages }: ChatListProps) {
 	return (
 		<div className='relative flex h-auto w-full flex-col gap-8 overflow-y-auto rounded-xl px-7 py-11 pb-29'>
-			{messages.map((message) => (
-				<ChatMessage key={message.id} message={message} />
+			{messages.map((message, i) => (
+				<ChatMessage key={i} message={message} />
 			))}
+			{children}
 		</div>
 	)
 }
