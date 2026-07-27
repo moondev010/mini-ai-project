@@ -3,6 +3,7 @@ from pathlib import Path
 from starlette.concurrency import run_in_threadpool
 from fastapi import FastAPI, Depends, WebSocket, WebSocketDisconnect
 from sqlmodel import Session
+from pydantic import BaseModel, ValidationError
 
 from settings import Settings
 from database import Database
@@ -34,6 +35,10 @@ def get_vector_db() -> VectorDatabase:
     return vector_database
 
 
+class UserRequest(BaseModel):
+    prompt: str
+
+
 @app.websocket("/chat")
 async def chat(
     websocket: WebSocket,
@@ -44,35 +49,42 @@ async def chat(
     await websocket.accept()
     try:
         while True:
-            prompt = await websocket.receive_text()
+            raw = await websocket.receive_json()
 
-            await run_in_threadpool(repo.create, "user", prompt)
+            try:
+                data = UserRequest.model_validate(raw)
 
-            recent_messages = await run_in_threadpool(repo.get_some)
+                prompt = data.prompt
 
-            history = [{"role": msg.role.value, "content": msg.content}
-                       for msg in recent_messages]
+                await run_in_threadpool(repo.create, "user", prompt)
 
-            last_response = get_last_assistant_message(history)
+                recent_messages = await run_in_threadpool(repo.get_some)
 
-            user_chunks = await run_in_threadpool(vector_db.search, prompt, 3, 0.54)
-            assistant_chunks = await run_in_threadpool(vector_db.search, last_response["content"], 3, 0.54) if last_response else []
+                history = [{"role": msg.role.value, "content": msg.content}
+                           for msg in recent_messages]
 
-            FINAL_SYSTEM_PROMPT = build_final_prompt(
-                SYSTEM_PROMPT, user_chunks, assistant_chunks)
+                last_response = get_last_assistant_message(history)
 
-            full_response = ""
+                user_chunks = await run_in_threadpool(vector_db.search, prompt, 3, 0.54)
+                assistant_chunks = await run_in_threadpool(vector_db.search, last_response["content"], 3, 0.54) if last_response else []
 
-            async for part in ollama.send_messages([
-                    {"role": "system", "content": FINAL_SYSTEM_PROMPT},
-                *history
-            ]):
-                full_response += part
-                await websocket.send_json({"type": "part", "content": part})
+                FINAL_SYSTEM_PROMPT = build_final_prompt(
+                    SYSTEM_PROMPT, user_chunks, assistant_chunks)
 
-            await run_in_threadpool(repo.create, "assistant", full_response)
+                full_response = ""
 
-            await websocket.send_json({"type": "done"})
+                async for part in ollama.send_messages([
+                        {"role": "system", "content": FINAL_SYSTEM_PROMPT},
+                    *history
+                ]):
+                    full_response += part
+                    await websocket.send_json({"type": "part", "content": part})
+
+                await run_in_threadpool(repo.create, "assistant", full_response)
+
+                await websocket.send_json({"type": "done"})
+            except ValidationError:
+                await websocket.send_json({"type": "error ", "content": "Invalid request body"})
 
     except WebSocketDisconnect:
         print("Client disconnected")
