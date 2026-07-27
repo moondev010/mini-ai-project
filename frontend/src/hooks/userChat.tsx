@@ -11,6 +11,7 @@ interface ReturnElements {
 	streamingMessage: string | null
 	messages: Message[]
 	sendMessage: (prompt: string) => void
+	appendMessages: (messages: Message[]) => void
 }
 
 interface UseChatArguments {
@@ -75,7 +76,18 @@ function useChat({ url, interval = 80 }: UseChatArguments): ReturnElements {
 		[socket, isStreaming],
 	)
 
-	return { socket, isStreaming, streamingMessage, messages, sendMessage }
+	const appendMessages = useCallback((newMessages: Message[]) => {
+		setMessages((prev) => [...prev, ...newMessages])
+	}, [])
+
+	return {
+		socket,
+		isStreaming,
+		streamingMessage,
+		messages,
+		sendMessage,
+		appendMessages,
+	}
 }
 
 export default useChat
