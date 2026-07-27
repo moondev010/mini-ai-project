@@ -90,11 +90,6 @@ async def chat(
         print("Client disconnected")
 
 
-@app.post("/messages/")
-def create_message(data: MessageCreate, repo: MessageRepository = Depends(get_message_repository)):
-    return repo.create(role=data.role, content=data.content)
-
-
 @app.get("/messages/")
 def get_messages(repo: MessageRepository = Depends(get_message_repository), limit: int = 10):
     return repo.get_some(limit=limit)
