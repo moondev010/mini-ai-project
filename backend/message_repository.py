@@ -20,7 +20,7 @@ class MessageRepository:
     def get_all(self) -> Sequence[Message]:
         statement = select(Message).order_by(Message.created_at.desc())
 
-        return self._session.exec(statement).all()
+        return list(reversed(self._session.exec(statement).all()))
 
     def get_some(self, limit: int = 10) -> Sequence[Message]:
         statement = select(Message).order_by(

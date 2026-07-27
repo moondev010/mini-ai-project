@@ -2,6 +2,7 @@ from pathlib import Path
 
 from starlette.concurrency import run_in_threadpool
 from fastapi import FastAPI, Depends, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session
 from pydantic import BaseModel, ValidationError
 
@@ -19,6 +20,14 @@ ollama_model = OllamaModel(
 vector_database = VectorDatabase.build_from_settings(settings=Settings)
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 SYSTEM_PROMPT = Path("system_prompt.md").read_text(encoding="utf-8")
 
